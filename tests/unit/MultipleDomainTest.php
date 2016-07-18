@@ -177,41 +177,9 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertSame("unit/", $result);
     }
 
-    public function testTranslations()
+    public function testItSetsBackendDomain()
     {
-        /** @var \Xinax\LaravelGettext\Session\SessionHandler|\Mockery\MockInterface $session */
-        $session = m::mock(SessionHandler::class);
-        $session->shouldReceive('get')
-            ->andReturn('es_AR');
-
-        $session->shouldReceive('set');
-
-        /** @var \Xinax\LaravelGettext\Adapters\LaravelAdapter|\Mockery\MockInterface $adapter */
-        $adapter = m::mock(LaravelAdapter::class);
-
-        $adapter->shouldReceive('setLocale');
-        $adapter->shouldReceive('getApplicationPath')
-            ->andReturn(dirname(__FILE__));
-
-        $config = $this->configManager->get();
-
-        // Static traslation files
-        $config->setTranslationsPath("translations");
-
-        $gettext = new Gettext(
-            $config,
-            $session,
-            $adapter,
-            $this->fileSystem
-        );
-
-        $laravelGettext = new LaravelGettext($gettext);
-        $laravelGettext->setLocale("es_AR");
-
-        $this->assertSame(
-            "Cadena general con echo de php",
-            _("general string with php echo")
-        );
+        $laravelGettext = $this->laravelGetTextFixture();
 
         $laravelGettext->setDomain("backend");
 
@@ -219,11 +187,23 @@ class MultipleDomainTest extends BaseTestCase
             "backend",
             $laravelGettext->getDomain()
         );
+    }
+
+    public function testItTranslatesFromBackendDomain()
+    {
+        $laravelGettext = $this->laravelGetTextFixture();
+
+        $laravelGettext->setDomain("backend");
 
         $this->assertSame(
             "Cadena en el backend con echo de php",
             _("Backend string with php echo")
         );
+    }
+
+    public function testItSetsFrontendDomain()
+    {
+        $laravelGettext = $this->laravelGetTextFixture();
 
         $laravelGettext->setDomain("frontend");
 
@@ -231,26 +211,51 @@ class MultipleDomainTest extends BaseTestCase
             "frontend",
             $laravelGettext->getDomain()
         );
+    }
+
+    public function testItTranslatesFromFrontendDomain()
+    {
+        $laravelGettext = $this->laravelGetTextFixture();
+
+        $laravelGettext->setDomain("frontend");
 
         $this->assertSame(
             "Cadena de controlador",
             _("Controller string")
         );
-                                
+
         $this->assertSame(
             "Cadena de frontend con echo de php",
             _("Frontend string with php echo")
         );
+    }
 
-        $laravelGettext->setLocale("en_US");
+    public function testItTranslatesFromEsLocaleByDefault()
+    {
+        // initialize, even though we won't be modifying anything
+        $this->laravelGetTextFixture();
+
+        $this->assertSame(
+            "Cadena general con echo de php",
+            _("general string with php echo")
+        );
+    }
+
+    public function testItTranslatesFromUsLocale()
+    {
+        // this test isn't very specific compared to others
+        $this->laravelGetTextFixture()->setLocale("en_US");
 
         $this->assertSame(
             "Frontend string with php echo",
             _("Frontend string with php echo")
         );
+    }
 
+    public function testItFailsSettingUndefinedDomain()
+    {
         $this->setExpectedException(UndefinedDomainException::class);
-        $laravelGettext->setDomain("wrong-domain");
+        $this->laravelGetTextFixture()->setDomain("wrong-domain");
     }
 
     /**
@@ -268,5 +273,42 @@ class MultipleDomainTest extends BaseTestCase
     {
         $dir = __DIR__ . '/../lang/i18n';
         FileSystem::clearDirectory($dir);
+    }
+
+    /**
+     * @return LaravelGettext
+     */
+    private function laravelGetTextFixture()
+    {
+        /** @var \Xinax\LaravelGettext\Session\SessionHandler|\Mockery\MockInterface $session */
+        $session = m::mock(SessionHandler::class);
+        $session->shouldReceive('get')
+                ->andReturn('es_AR');
+
+        $session->shouldReceive('set');
+
+        /** @var \Xinax\LaravelGettext\Adapters\LaravelAdapter|\Mockery\MockInterface $adapter */
+        $adapter = m::mock(LaravelAdapter::class);
+
+        $adapter->shouldReceive('setLocale');
+        $adapter->shouldReceive('getApplicationPath')
+                ->andReturn(dirname(__FILE__));
+
+        $config = $this->configManager->get();
+
+        // Static traslation files
+        $config->setTranslationsPath("translations");
+
+        $gettext = new Gettext(
+            $config,
+            $session,
+            $adapter,
+            $this->fileSystem
+        );
+
+        $laravelGettext = new LaravelGettext($gettext);
+        $laravelGettext->setLocale("es_AR");
+
+        return $laravelGettext;
     }
 }
