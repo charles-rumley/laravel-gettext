@@ -49,6 +49,15 @@ class MultipleDomainTest extends BaseTestCase
     }
 
     /**
+     * Clear all files generated for testing purposes
+     */
+    protected function clearFiles()
+    {
+        $dir = __DIR__ . '/../lang/i18n';
+        FileSystem::clearDirectory($dir);
+    }
+
+    /**
      * @inheritdoc
      */
     public function setUp()
@@ -61,11 +70,12 @@ class MultipleDomainTest extends BaseTestCase
 
         $this->basePath = realpath(__DIR__ . '/..');
         $this->storagePath = realpath(__DIR__ . '/../storage');
-        
-        $this->fileSystem = new FileSystem($this->configManager->get(), 
-            $this->basePath, 
+
+        $this->fileSystem = new FileSystem(
+            $this->configManager->get(),
+            $this->basePath,
             $this->storagePath
-        ); 
+        );
 
     }
 
@@ -127,16 +137,14 @@ class MultipleDomainTest extends BaseTestCase
      */
     public function testItCompilesViews()
     {
-        $viewPaths = [ 'views' ];
+        $viewPaths = ['views'];
 
         $result = $this->fileSystem->compileViews($viewPaths, "frontend");
         $this->assertTrue($result);
-        
     }
 
-
     /**
-     * Test the update 
+     * Test the update
      */
     public function testItWorksWithFiles()
     {
@@ -156,9 +164,9 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertTrue(strpos($domainPath, 'i18n') !== false);
 
         foreach ($localesGenerated as $localeGenerated) {
-            $this->assertTrue(file_exists($localeGenerated));    
+            $this->assertTrue(file_exists($localeGenerated));
         }
-        
+
         $this->assertTrue(is_dir($localePath));
 
         // Update locale test
@@ -187,6 +195,43 @@ class MultipleDomainTest extends BaseTestCase
             "backend",
             $laravelGettext->getDomain()
         );
+    }
+
+    /**
+     * @return LaravelGettext
+     */
+    private function laravelGetTextFixture()
+    {
+        /** @var \Xinax\LaravelGettext\Session\SessionHandler|\Mockery\MockInterface $session */
+        $session = m::mock(SessionHandler::class);
+        $session->shouldReceive('get')
+                ->andReturn('es_AR');
+
+        $session->shouldReceive('set');
+
+        /** @var \Xinax\LaravelGettext\Adapters\LaravelAdapter|\Mockery\MockInterface $adapter */
+        $adapter = m::mock(LaravelAdapter::class);
+
+        $adapter->shouldReceive('setLocale');
+        $adapter->shouldReceive('getApplicationPath')
+                ->andReturn(dirname(__FILE__));
+
+        $config = $this->configManager->get();
+
+        // Static traslation files
+        $config->setTranslationsPath("translations");
+
+        $gettext = new Gettext(
+            $config,
+            $session,
+            $adapter,
+            $this->fileSystem
+        );
+
+        $laravelGettext = new LaravelGettext($gettext);
+        $laravelGettext->setLocale("es_AR");
+
+        return $laravelGettext;
     }
 
     public function testItTranslatesFromBackendDomain()
@@ -264,51 +309,5 @@ class MultipleDomainTest extends BaseTestCase
     public function tearDown()
     {
         m::close();
-    }
-
-    /**
-     * Clear all files generated for testing purposes
-     */
-    protected function clearFiles()
-    {
-        $dir = __DIR__ . '/../lang/i18n';
-        FileSystem::clearDirectory($dir);
-    }
-
-    /**
-     * @return LaravelGettext
-     */
-    private function laravelGetTextFixture()
-    {
-        /** @var \Xinax\LaravelGettext\Session\SessionHandler|\Mockery\MockInterface $session */
-        $session = m::mock(SessionHandler::class);
-        $session->shouldReceive('get')
-                ->andReturn('es_AR');
-
-        $session->shouldReceive('set');
-
-        /** @var \Xinax\LaravelGettext\Adapters\LaravelAdapter|\Mockery\MockInterface $adapter */
-        $adapter = m::mock(LaravelAdapter::class);
-
-        $adapter->shouldReceive('setLocale');
-        $adapter->shouldReceive('getApplicationPath')
-                ->andReturn(dirname(__FILE__));
-
-        $config = $this->configManager->get();
-
-        // Static traslation files
-        $config->setTranslationsPath("translations");
-
-        $gettext = new Gettext(
-            $config,
-            $session,
-            $adapter,
-            $this->fileSystem
-        );
-
-        $laravelGettext = new LaravelGettext($gettext);
-        $laravelGettext->setLocale("es_AR");
-
-        return $laravelGettext;
     }
 }
