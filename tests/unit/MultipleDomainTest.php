@@ -5,6 +5,7 @@ namespace Xinax\LaravelGettext\Test;
 use Mockery as m;
 use Xinax\LaravelGettext\Adapters\LaravelAdapter;
 use Xinax\LaravelGettext\Config\ConfigManager;
+use Xinax\LaravelGettext\Exceptions\UndefinedDomainException;
 use Xinax\LaravelGettext\FileSystem;
 use Xinax\LaravelGettext\Gettext;
 use Xinax\LaravelGettext\LaravelGettext;
@@ -176,9 +177,6 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertSame("unit/", $result);
     }
 
-    /**
-     * @expectedException \Xinax\LaravelGettext\Exceptions\UndefinedDomainException
-     */
     public function testTranslations()
     {
         /** @var \Xinax\LaravelGettext\Session\SessionHandler|\Mockery\MockInterface $session */
@@ -251,7 +249,7 @@ class MultipleDomainTest extends BaseTestCase
             _("Frontend string with php echo")
         );
 
-        // Expected exception
+        $this->setExpectedException(UndefinedDomainException::class);
         $laravelGettext->setDomain("wrong-domain");
     }
 
