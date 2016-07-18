@@ -104,14 +104,15 @@ class LaravelGettext
     }
 
     /**
-     * Sets the current domain
+     * Sets the default domain
      * 
      * @param string $domain
      * @return $this
      */
-    public function setDomain($domain)
+    public function withDefaultDomain($domain)
     {
-        $this->gettext->setDomain($domain);
+        $this->gettext->withDefaultDomain($domain);
+
         return $this;
     }
 

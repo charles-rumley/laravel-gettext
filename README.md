@@ -224,7 +224,7 @@ To change configuration on runtime you have these methods:
      *
      * @param String $domain
      */
-    LaravelGettext::setDomain($domain);
+    LaravelGettext::addDomain($domain);
 ```
 
 ```php
@@ -342,10 +342,19 @@ To add a new domain just wrap your paths in the desired domain name, like this e
 
 This configuration generates three translation files by each language: **messages.po**, **frontend.po** and **backend.po**
 
-To change the current domain in runtime (a route-middleware would be a nice place for do this):
+Files for each domain will be loaded into gettext by default, but lookups outside of the default domain must use `dgettext`.
+```php
+   __('String that is part of the default domain'); // will be resolved correctly
+   __('String that is part of the frontend domain'); // will not be resolved correctly
+   
+   // instead, call
+   dgettext('frontend', 'String that is part of the frontend domain'); // will be resolved correctly
+```
+
+To change the default domain at runtime (a route-middleware would be a nice place for do this):
 
 ```php
-    LaravelGettext::setDomain("backend");
+    LaravelGettext::withDefaultDomain("backend");
 ```
 
 **Remember:** *update your gettext files every time you change the 'source-paths'* option, otherwise is not necessary.

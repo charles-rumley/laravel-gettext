@@ -2,12 +2,13 @@
 
 namespace Xinax\LaravelGettext;
 
-use Xinax\LaravelGettext\Session\SessionHandler;
+use Exception;
 use Xinax\LaravelGettext\Adapters\AdapterInterface;
 use Xinax\LaravelGettext\Config\Models\Config;
+use Xinax\LaravelGettext\Exceptions\DomainBindingException;
+use Xinax\LaravelGettext\Exceptions\DomainCharsetSpecificationException;
 use Xinax\LaravelGettext\Exceptions\UndefinedDomainException;
-
-use Illuminate\Support\Facades\Session;
+use Xinax\LaravelGettext\Session\SessionHandler;
 
 class Gettext
 {
@@ -45,6 +46,13 @@ class Gettext
      * @var String
      */
     protected $domain;
+
+    /**
+     * Domains we've bound with gettext
+     *
+     * @var String[]
+     */
+    protected $boundDomains = [];
 
     /**
      * @param Config $config
@@ -102,8 +110,13 @@ class Gettext
             $this->locale = $locale;
             $this->session->set($locale);
 
-            // Domain
-            $this->setDomain($this->domain);
+            // bind to all domains
+            foreach ($this->configuration->getAllDomains() as $domain) {
+                $this->addDomain($domain);
+            }
+
+            // set default domain
+            $this->withDefaultDomain($this->domain);
 
             // Laravel built-in locale
             if ($this->configuration->isSyncLaravel()) {
@@ -177,27 +190,63 @@ class Gettext
         return $this;
     }
 
+    private function bindToDomain($domain, $encoding, $domainPath)
+    {
+        if (bindtextdomain($domain, $domainPath) != realpath($domainPath)) {
+            throw new DomainBindingException($domain, $domainPath);
+        }
+
+        if (bind_textdomain_codeset($domain, $encoding) != $encoding) {
+            throw new DomainCharsetSpecificationException($domain, $encoding);
+        }
+
+        return $domain;
+    }
+
+    public function withDefaultDomain($domain)
+    {
+        $this->addDomain($domain);
+        $this->domain = textdomain($domain);
+
+        return $this;
+    }
+
     /**
-     * Sets the current domain and updates gettext domain application
+     * Adds the domain as a gettext binding
      *
      * @param   String                      $domain
      * @throws  UndefinedDomainException    If domain is not defined
      * @return  self
      */
-    public function setDomain($domain)
+    public function addDomain($domain)
     {
-        if (!in_array($domain, $this->configuration->getAllDomains())) {
-            throw new UndefinedDomainException("Domain '$domain' is not registered.");
+        if (in_array($domain, $this->boundDomains)) {
+            // we've already bound this domain
+            return $this;
         }
 
-        $customLocale = $this->configuration->getCustomLocale() ? "/" . $this->locale : "";
-        
-        bindtextdomain($domain, $this->fileSystem->getDomainPath() . $customLocale);
-        bind_textdomain_codeset($domain, $this->encoding);
+        $this->assertDomainIsDefined($domain);
 
-        $this->domain = textdomain($domain);
+        $customLocale = $this->configuration->getCustomLocale() ? "/" . $this->locale : "";
+
+        $domainPath = $this->fileSystem->getDomainPath() . $customLocale;
+
+        array_push($this->boundDomains, $this->bindToDomain($domain, $this->encoding, $domainPath));
 
         return $this;
+    }
+
+    /**
+     * Throw an exception if we do not have a domain defined
+     *
+     * @param $domain
+     * @throws UndefinedDomainException
+     */
+    private function assertDomainIsDefined($domain)
+    {
+        if (!in_array($domain, $this->configuration->getAllDomains())) {
+            throw new UndefinedDomainException("Domain '$domain' is not registered");
+        }
     }
 
     /**
