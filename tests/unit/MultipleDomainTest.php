@@ -72,7 +72,7 @@ class MultipleDomainTest extends BaseTestCase
     /**
      * Test domain configuration
      */
-    public function testDomainConfiguration()
+    public function testItGetsAllDomains()
     {
         $expected = [
             'messages',
@@ -84,7 +84,7 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testFrontendDomainPaths()
+    public function testitGetsFrontendDomainPaths()
     {
         $expectedPaths = [
             'controllers',
@@ -95,7 +95,7 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertEquals($expectedPaths, $actualPaths);
     }
 
-    public function testBackendDomainPaths()
+    public function testItGetsBackendDomainPaths()
     {
         $expectedPaths = [
             'views/backend'
@@ -105,7 +105,7 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertEquals($expectedPaths, $actualPaths);
     }
 
-    public function testDefaultDomainPaths()
+    public function testItGetsDefaultDomainPaths()
     {
         $expectedPaths = [
             'views/messages',
@@ -116,7 +116,7 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertEquals($expectedPaths, $actualPaths);
     }
 
-    public function testNoMissingDomainPaths()
+    public function testItHasNoMissingDomainPaths()
     {
         // config/config.php doesn't contain a domain named `missing`, and should return no records
         $this->assertCount(0, $this->configManager->get()->getSourcesFromDomain('missing'));
@@ -125,7 +125,7 @@ class MultipleDomainTest extends BaseTestCase
     /**
      * View compiler tests
      */
-    public function testCompileViews()
+    public function testItCompilesViews()
     {
         $viewPaths = [ 'views' ];
 
@@ -138,7 +138,7 @@ class MultipleDomainTest extends BaseTestCase
     /**
      * Test the update 
      */
-    public function testFileSystem()
+    public function testItWorksWithFiles()
     {
         // Domain path test
         $domainPath = $this->fileSystem->getDomainPath();
@@ -165,7 +165,7 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertTrue($this->fileSystem->updateLocale($localePath, $locale, "backend"));
     }
 
-    public function testGetRelativePath()
+    public function testItGetsRelativePath()
     {
         // dir/
         $from = __DIR__;
