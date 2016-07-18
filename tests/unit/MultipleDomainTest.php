@@ -132,6 +132,78 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertCount(0, $this->configManager->get()->getSourcesFromDomain('missing'));
     }
 
+    public function testItSetsDefaultDomain()
+    {
+        $laravelGettext = $this->laravelGetTextFixture();
+
+        $laravelGettext->withDefaultDomain("frontend");
+
+        $this->assertSame(
+            "frontend",
+            $laravelGettext->getDomain()
+        );
+    }
+
+    public function testItTranslatesFromBackendDomain()
+    {
+        $this->laravelGetTextFixture();
+
+        $this->assertSame(
+            "Cadena en el backend con echo de php",
+            dgettext('backend', "Backend string with php echo"),
+            'Failed asserting string was translated without specifying the domain'
+        );
+    }
+
+    public function testItTranslatesFromFrontendDomain()
+    {
+        $laravelGettext = $this->laravelGetTextFixture();
+
+        $laravelGettext->withDefaultDomain("frontend");
+
+        $this->assertSame(
+            "Cadena de controlador",
+            _("Controller string")
+        );
+
+        $this->assertSame(
+            "Cadena de frontend con echo de php",
+            _("Frontend string with php echo")
+        );
+    }
+
+    public function testItTranslatesFromDefaultDomain()
+    {
+        $defaultDomain = $this->laravelGetTextFixture()->getDomain();
+
+        $this->assertSame(
+            "Cadena general con echo de php",
+            _("general string with php echo"),
+            "Failed asserting string was translated from default domain '$defaultDomain''"
+        );
+    }
+
+    public function testItTranslatesFromUsLocale()
+    {
+        $this->laravelGetTextFixture()->setLocale("en_US");
+
+        $this->assertSame(
+            "Frontend string with php echo",
+            _("Frontend string with php echo")
+        );
+    }
+
+    public function testItTranslatesFromDefaultLocale()
+    {
+        $defaultLocale = $this->laravelGetTextFixture()->getLocale();
+
+        $this->assertSame(
+            "Cadena general con echo de php",
+            _("general string with php echo"),
+            "Failed asserting string was translated from default locale '$defaultLocale''"
+        );
+    }
+
     /**
      * View compiler tests
      */
@@ -185,18 +257,6 @@ class MultipleDomainTest extends BaseTestCase
         $this->assertSame("unit/", $result);
     }
 
-    public function testItSetsBackendDomain()
-    {
-        $laravelGettext = $this->laravelGetTextFixture();
-
-        $laravelGettext->setDomain("backend");
-
-        $this->assertSame(
-            "backend",
-            $laravelGettext->getDomain()
-        );
-    }
-
     /**
      * @return LaravelGettext
      */
@@ -234,77 +294,14 @@ class MultipleDomainTest extends BaseTestCase
         return $laravelGettext;
     }
 
-    public function testItTranslatesFromBackendDomain()
-    {
-        $laravelGettext = $this->laravelGetTextFixture();
-
-        $laravelGettext->setDomain("backend");
-
-        $this->assertSame(
-            "Cadena en el backend con echo de php",
-            _("Backend string with php echo")
-        );
-    }
-
-    public function testItSetsFrontendDomain()
-    {
-        $laravelGettext = $this->laravelGetTextFixture();
-
-        $laravelGettext->setDomain("frontend");
-
-        $this->assertSame(
-            "frontend",
-            $laravelGettext->getDomain()
-        );
-    }
-
-    public function testItTranslatesFromFrontendDomain()
-    {
-        $laravelGettext = $this->laravelGetTextFixture();
-
-        $laravelGettext->setDomain("frontend");
-
-        $this->assertSame(
-            "Cadena de controlador",
-            _("Controller string")
-        );
-
-        $this->assertSame(
-            "Cadena de frontend con echo de php",
-            _("Frontend string with php echo")
-        );
-    }
-
-    public function testItTranslatesFromEsLocaleByDefault()
-    {
-        // initialize, even though we won't be modifying anything
-        $this->laravelGetTextFixture();
-
-        $this->assertSame(
-            "Cadena general con echo de php",
-            _("general string with php echo")
-        );
-    }
-
-    public function testItTranslatesFromUsLocale()
-    {
-        // this test isn't very specific compared to others
-        $this->laravelGetTextFixture()->setLocale("en_US");
-
-        $this->assertSame(
-            "Frontend string with php echo",
-            _("Frontend string with php echo")
-        );
-    }
-
     public function testItFailsSettingUndefinedDomain()
     {
         $this->setExpectedException(UndefinedDomainException::class);
-        $this->laravelGetTextFixture()->setDomain("wrong-domain");
+        $this->laravelGetTextFixture()->withDefaultDomain("wrong-domain");
     }
 
     /**
-     * Mocker tear-down
+     * Mockery tear-down
      */
     public function tearDown()
     {
